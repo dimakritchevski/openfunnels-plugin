@@ -1,0 +1,21 @@
+{
+  "name": "openfunnels-skills",
+  "owner": {
+    "name": "Dima Kritchevski",
+    "email": "dimakritchevski@gmail.com"
+  },
+  "metadata": {
+    "description": "OpenFunnels team skills — funnel packaging, design and copywriting for the OpenFunnels platform"
+  },
+  "plugins": [
+    {
+      "name": "openfunnels",
+      "source": "./plugins/openfunnels",
+      "description": "Build valid OpenFunnels funnel packages: the package spec as a skill, plus /package-funnel to validate and zip a funnel for upload",
+      "version": "1.0.0",
+      "author": {
+        "name": "Dima Kritchevski"
+      }
+    }
+  ]
+}

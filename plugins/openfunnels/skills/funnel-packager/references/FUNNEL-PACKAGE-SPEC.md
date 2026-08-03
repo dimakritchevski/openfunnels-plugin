@@ -1,0 +1,260 @@
+# Funnel Package Format — v1
+
+A funnel package is a plain **.zip** of static files. It is the contract between
+page generation (Claude) and the platform. Uploads are validated against this
+spec; violations are rejected with a clear error.
+
+## Structure
+
+- `index.html` **must** exist at the zip root (a single wrapping top-level
+  folder is tolerated and stripped automatically).
+- Other pages route by filename: `thank-you.html` → `/thank-you`,
+  `pricing/index.html` → `/pricing/`.
+- `404.html` at the root, if present, is served for unknown paths.
+- All asset references must be **relative** paths (`assets/style.css`,
+  `images/hero.webp`) — never root-relative (`/images/…`), because preview URLs
+  mount the funnel under a path prefix (`client.openfunnels.app/<funnel>/`).
+  Root-relative is reserved for `/_platform/*` and `data-redirect` targets,
+  which the platform remounts automatically. No external CDNs for critical
+  rendering.
+- `__MACOSX/`, `.DS_Store`, `Thumbs.db` are ignored.
+
+## Forms (leads)
+
+- A lead-capture form is marked `<form data-lead data-redirect="/thank-you">`.
+  The injected platform snippet submits it to the lead API and redirects on
+  success. Forms without `data-lead` are not captured (upload warns).
+- No-JS fallback: `action="/_platform/lead" method="POST"` behaves identically.
+- Include the honeypot field in every lead form:
+  `<input name="company_website" class="hp" tabindex="-1" autocomplete="off">`
+  (hide `.hp` off-screen in CSS — do not use `display:none`).
+
+## Editable-content markers (`data-edit` / `data-section`)
+
+Mark every piece of content a human might later want to change — headlines,
+subheads, CTA labels, offer/price lines, testimonial quotes, guarantee copy —
+with a `data-edit` attribute, and wrap each major page region in a
+`data-section`:
+
+```html
+<section data-section="hero" id="hero">
+  <h1 data-edit="hero-headline">Protect Your Home, Your Relationship With
+    Your Children and Your Financial Future</h1>
+  <p data-edit="hero-sub">Divorce can quickly put everything you care about
+    at risk…</p>
+  <button type="submit" data-edit="cta-primary">Book My One-Hour Consultation</button>
+</section>
+```
+
+Rules:
+
+- Names are kebab-case, unique within the page, prefixed by their section:
+  `hero-headline`, `hero-sub`, `benefits-1`, `faq-3-answer`, `cta-primary`.
+- Put `data-edit` on the element that OWNS the text (the `h1`, the `p`, the
+  `button`) — never on a wrapper `div`, and never split one sentence across
+  two marked elements.
+- Keep a marked element's text as **one text node — no element children**. The
+  editor's click-to-edit refuses any element that has child elements (editing
+  mixed content as plain text would mangle the markup), so text that shares
+  its parent with an element sibling silently loses inline editing. When one
+  visual block holds two texts — an eyebrow + a headline, a price + a suffix —
+  give EACH its own element with its own `data-edit`, and never leave editable
+  text as a bare text node beside an element:
+
+  ```html
+  <!-- WRONG — the headline is a bare text node next to the span, so it is
+       selectable but NOT click-editable: -->
+  <h1 data-edit="hero-headline"><span class="eyebrow" data-edit="hero-eyebrow">Facing divorce?</span>
+    Protect Your Home</h1>
+
+  <!-- RIGHT — two single-text-node elements, both click-editable: -->
+  <h1><span class="eyebrow" data-edit="hero-eyebrow">Facing divorce?</span>
+    <span data-edit="hero-headline">Protect Your Home</span></h1>
+  ```
+
+  In long body copy an inline `<strong>` accent is tolerated — but know the
+  cost: that paragraph can then only be edited through chat, not by clicking.
+- Minimum per page: hero headline, hero subhead, and the primary CTA marked.
+- Section names from this set where they apply: `hero`, `trust`, `benefits`,
+  `how-it-works`, `testimonials`, `faq`, `cta`, `footer`.
+
+Why: the in-app variation editor (natural-language + click-to-select edits)
+targets elements by these markers. Unmarked pages still work — the editor
+falls back to positional selectors — but marked pages give precise,
+unambiguous edits and cheaper split-test variations.
+
+## Section anchors (deep links)
+
+Every `data-section` element also carries an **`id` matching its section
+name**: `<section data-section="testimonials" id="testimonials">`. That makes
+each major region directly linkable — `…/example/#testimonials` opens the
+page scrolled to the testimonials section, which is how ads, emails and social
+posts should link to a specific part of a funnel.
+
+- ids are unique within the page and kebab-case, same as section names.
+- Treat an id as a **published URL once the funnel is live** — renaming it
+  breaks every ad or post already linking to `#that-name`. Rename sections
+  freely before launch, deliberately after.
+- Pages with a sticky header set `scroll-margin-top` on sections (roughly the
+  header's height) so the browser doesn't scroll the section heading
+  underneath the fixed nav:
+  `section[id] { scroll-margin-top: 90px; }`
+- Upload **warns** (never rejects) when a `data-section` has no `id`, so
+  hand-me-down pages still deploy.
+
+## Reserved
+
+- The `/_platform/*` path prefix belongs to the platform (lead API, events,
+  webhooks). Packages must not contain files under `_platform/`.
+- The platform injects `<script>window.__lmt=…</script>` plus any configured
+  tracking scripts into `<head>` / before `</body>` at serve time. Pages must
+  contain proper `<head>` and `<body>` elements.
+
+## Limits
+
+| Limit | Value |
+|---|---|
+| Zip size | 25 MB |
+| Unpacked size | 100 MB |
+| File count | 500 |
+| Paths | no `..`, no absolute paths; `\` separators are normalised to `/` |
+
+## Split tests (`index-b.html`)
+
+A package (or bundle folder) containing both `index.html` and **`index-b.html`**
+deploys as an A/B split test in one step:
+
+- Variant **A** = the package minus `index-b.html`.
+- Variant **B** = the same file set with `index-b.html` serving as the entry
+  page. All other pages and assets are shared between both variants.
+- On upload/import with activation: both versions are stored, variants A and B
+  go live at 50/50, and a running split test is created — identical to starting
+  one manually. Sticky per-visitor assignment, stats, declare-winner and cancel
+  all work as normal from the funnel page.
+- A/B only — `index-c.html` etc. is not a thing; the stats engine is
+  two-variant.
+- If a split test is **already running** on that funnel, the versions are
+  uploaded but nothing is activated and no test is started (flagged in the
+  result) — a live test is never clobbered.
+- Bulk-import revert ends an imported test and returns the funnel to whatever
+  it served before.
+
+## Manifest (`funnel.json`, optional)
+
+A package (or bundle folder) may include a **`funnel.json`** at its root to
+pre-wire funnel steps and the conversion goal on deploy. It is deploy metadata:
+it is never served, and it does not count towards the version's content hash.
+
+```json
+{
+  "steps": [
+    { "name": "Landing page", "path": "/" },
+    { "name": "Book a call",  "path": "/book-a-call" },
+    { "name": "Booked",       "path": "/thank-you" }
+  ],
+  "goal": "step:/thank-you"
+}
+```
+
+- `steps` (max 10, ordered): powers the step-flow analytics on the funnel page
+  — unique visitors per step and step→step conversion. Paths are normalised
+  (`/thank-you.html` ≡ `/thank-you` ≡ `/thank-you/`).
+- `goal`: what counts as a conversion for split-test stats — `"leads"`
+  (form leads + calls + Calendly bookings; the default), `"booking"`
+  (Calendly bookings only), or `"step:/path"` (unique visitors reaching that
+  page, e.g. a post-booking confirmation).
+- Both keys are optional; uploading a manifest replaces the funnel's existing
+  steps/goal. A malformed manifest warns and is ignored — it never blocks a
+  deploy.
+
+## Tracking tags (`tracking.md`)
+
+An optional **`tracking.md`** at the package root declares the funnel's
+tracking tags so they deploy with the zip instead of being configured by hand
+per funnel. Like `funnel.json`, it is metadata: parsed out, never served, and
+excluded from the content hash.
+
+Each `## ` heading is one tag. The heading names the location — it must
+contain **head** or **body** (case-insensitive) — and may scope the tag to
+specific pages with `/path` tokens:
+
+~~~markdown
+# Tracking tags
+
+## Head
+```html
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-XXXXXXXXX"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','AW-XXXXXXXXX');</script>
+```
+
+## Body end
+```html
+<script src="//cdn.callrail.com/companies/XXXXXXXXX/XXXXXXXXXXXX/12/swap.js"></script>
+```
+
+## Head — /thank-you
+```html
+<script>gtag('event','conversion',{'send_to':'AW-XXXXXXXXX/XXXXXXXXXXX'});</script>
+```
+~~~
+
+- The tag HTML is the section's fenced code block(s); raw text under the
+  heading works too if there are no fences.
+- Scoped headings can list several pages: `## Head — /thank-you, /book-a-call`.
+  No `/path` in the heading = every page.
+- Deploying a package with `tracking.md` **replaces** the funnel's previous
+  `tracking.md` tags (an empty file clears them). Scripts added by hand in the
+  admin are never touched, and imported tags show "(imported)" there.
+- Bad sections warn and are skipped — `tracking.md` never blocks a deploy.
+  Max 20 sections, 20k characters each.
+- In a **bundle**, put it at `_shared/tracking.md` to apply the same tags to
+  every funnel in one place (a funnel folder's own `tracking.md` wins). Because
+  it's outside the content hash, re-importing a bundle where only the tags
+  changed updates every funnel's tags even though each folder reports
+  "unchanged".
+
+## Tracking pixels & Calendly (serve-time behaviour)
+
+- Tracking scripts added in the admin can be scoped to specific pages (e.g. a
+  conversion pixel only on `/thank-you`); unscoped scripts inject everywhere.
+- Pageviews (visitor counts, step flow) are reported client-side by the
+  platform snippet, not at serve time — link scanners, unfurlers and other
+  bots that don't run JS never count as visitors, and JS-running crawlers are
+  filtered by user agent. No markup needed; the snippet is injected
+  automatically.
+- The platform snippet reports Calendly bookings automatically: when an
+  embedded Calendly widget fires `calendly.event_scheduled`, a **booking**
+  lead is recorded with variant/session attribution and client notifications
+  fire. No extra markup needed — just embed the Calendly widget normally.
+- Post-booking navigation: if any element on the page carries
+  `data-booking-redirect="/path"`, the snippet redirects the visitor there
+  once the booking is recorded (base-path aware, same as form
+  `data-redirect`). Use this instead of Calendly's own redirect setting so a
+  single Calendly event type can be shared across all funnels while each
+  funnel keeps its own confirmation page. Without the attribute, behaviour is
+  unchanged — the visitor stays on Calendly's confirmation screen.
+
+## Bundle format (bulk import)
+
+A **bundle** is a zip whose root contains one folder per funnel — no
+`index.html` at the zip root. Uploaded on a client's Funnels page, it imports
+every funnel at once (preview first, then commit).
+
+- Folder name becomes the funnel's URL slug (`commercial-leases-nsw/` →
+  `/commercial-leases-nsw/`). Names that aren't valid slugs are normalised;
+  each folder must contain a valid v1 package (`index.html` at folder root).
+- An optional `_shared/` folder at the zip root is copied into every funnel
+  (the funnel's own file wins on a path collision). Put common images/CSS here
+  once instead of duplicating them per folder.
+- The default funnel name is the `index.html` `<title>`, editable at preview.
+- Imports are idempotent: a folder whose slug matches an existing funnel
+  uploads a **new version** of it; if the content is byte-identical to what's
+  currently serving, it's skipped as unchanged. Re-upload the whole bundle
+  after editing a few funnels — only those change.
+- Bundle limits: 50 MB zip, 2000 files, 100 MB unpacked (per-funnel limits
+  above still apply to each folder).
+
+## Versioning
+
+This is **v1**. Breaking changes to the format bump the version; the validator
+stays backwards-compatible with older packages wherever possible.
