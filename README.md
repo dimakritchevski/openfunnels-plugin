@@ -1,4 +1,4 @@
-# OpenFunnels Skills
+# OpenFunnels Plugin
 
 Claude Code plugin marketplace for the OpenFunnels team. One install, always
 up to date — the funnel package spec and packaging tools ship as a plugin
@@ -9,8 +9,8 @@ that tracks this repo.
 In Claude Code:
 
 ```
-/plugin marketplace add dimakritchevski/openfunnels-skills
-/plugin install openfunnels@openfunnels-skills
+/plugin marketplace add dimakritchevski/openfunnels-plugin
+/plugin install openfunnels@openfunnels-plugin
 ```
 
 You need read access to this repo (it's private) — your normal GitHub
