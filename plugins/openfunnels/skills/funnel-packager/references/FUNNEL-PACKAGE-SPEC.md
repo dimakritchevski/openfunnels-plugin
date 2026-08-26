@@ -253,6 +253,22 @@ every funnel at once (preview first, then commit).
   after editing a few funnels — only those change.
 - Bundle limits: 50 MB zip, 2000 files, 100 MB unpacked (per-funnel limits
   above still apply to each folder).
+- **No wrapping folder — and verify it.** The single-package tolerance for a
+  wrapping top-level folder does **not** apply to bundles: the funnel folders
+  must sit directly at the zip root. A bundle zipped with a wrapper (e.g.
+  `my-bundle/criminal-defence-lawyer/…`) reads as one funnel named
+  `my-bundle` with no `index.html` and the import fails. This is easy to do
+  by accident: PowerShell's `Compress-Archive -Path "dir\*"` can include the
+  parent folder depending on version and path quoting. Zip the directory
+  **contents**, not the directory:
+  - PowerShell / .NET (deterministic):
+    `[System.IO.Compression.ZipFile]::CreateFromDirectory($srcDir, $destZip, [System.IO.Compression.CompressionLevel]::Optimal, $false)`
+    — the final `$false` is `includeBaseDirectory` and is the guarantee.
+  - Unix `zip`: `cd <bundle-dir> && zip -r ../bundle.zip .`
+  - **Mandatory post-zip check** before calling a bundle done: list the
+    archive's root entries and confirm they are exactly the funnel slug
+    folders (no other root entry, no `index.html`). If the root shows a
+    single folder wrapping everything, rebuild the zip.
 
 ## Versioning
 
