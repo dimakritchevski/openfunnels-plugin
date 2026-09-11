@@ -48,12 +48,18 @@ never rely on memory of an older version.
 
 - **Split test**: ship `index-b.html` alongside `index.html` → deploys as a
   50/50 A/B test in one step. A/B only; never clobbers a running test.
-- **`funnel.json`** (optional, root): pre-wires funnel steps (max 10) and the
-  conversion goal (`"leads"` | `"booking"` | `"step:/path"`).
+- **`funnel.json`** (optional, root): pre-wires the URL `slug` (bundle
+  imports only — a bad one errors that folder), the lead `category` ("Family
+  Law"), funnel `steps` (max 10, each `{name, path}` — `name` is the label
+  in analytics) and the conversion `goal` (`"leads"` | `"booking"` |
+  `"step:/path"`).
 - **`tracking.md`** (optional, root): declares tracking tags per location
   (`## Head`, `## Body end`) and optionally per page (`## Head — /thank-you`).
 - **Bundle** (bulk import): zip with one folder per funnel (folder name =
-  slug), optional `_shared/` copied into every funnel.
+  slug unless its `funnel.json` sets one), optional `_shared/` copied into
+  every funnel. `_shared/funnel.json` = manifest defaults for all funnels
+  (category, steps, goal set once; never `slug`), overridden key by key by
+  each folder's own `funnel.json`.
 - **Calendly**: embed the widget normally — bookings are tracked
   automatically. Use `data-booking-redirect="/path"` for post-booking
   navigation, not Calendly's own redirect setting.

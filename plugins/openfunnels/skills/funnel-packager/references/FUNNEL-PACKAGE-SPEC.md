@@ -142,11 +142,14 @@ deploys as an A/B split test in one step:
 ## Manifest (`funnel.json`, optional)
 
 A package (or bundle folder) may include a **`funnel.json`** at its root to
-pre-wire funnel steps and the conversion goal on deploy. It is deploy metadata:
-it is never served, and it does not count towards the version's content hash.
+pre-wire the funnel's URL slug, lead category, funnel steps and conversion
+goal on deploy. It is deploy metadata: it is never served, and it does not
+count towards the version's content hash.
 
 ```json
 {
+  "slug": "adi-business-lawyer-sydney-lp",
+  "category": "Business Law",
   "steps": [
     { "name": "Landing page", "path": "/" },
     { "name": "Book a call",  "path": "/book-a-call" },
@@ -156,16 +159,39 @@ it is never served, and it does not count towards the version's content hash.
 }
 ```
 
+- `slug` (**bundle imports only**): the funnel's URL path segment
+  (`/adi-business-lawyer-sydney-lp/`), instead of the folder name. Use it when
+  the URL must match something that already exists — ads, a funnel being
+  replaced — without renaming folders. Lowercase letters, digits and hyphens,
+  starting with a letter or digit, max 63 characters; an invalid or duplicate
+  slug **errors that folder's row** at preview (a funnel at the wrong URL is
+  worse than a blocked import). Matching against existing funnels (the
+  idempotent re-import) uses this slug. In a single-package upload the key is
+  ignored with a warning: that funnel already has a URL, set on its settings
+  page.
+- `category`: the **lead category** shown in lead notifications ("New
+  *Business Law* Lead for Aditum Lawyers") and the funnel's settings field.
+  Free text, max 60 characters. Present = set it on deploy; `""` or `null` =
+  clear it; absent = leave the funnel's current category alone. Without one,
+  notifications fall back to the funnel name.
 - `steps` (max 10, ordered): powers the step-flow analytics on the funnel page
-  — unique visitors per step and step→step conversion. Paths are normalised
-  (`/thank-you.html` ≡ `/thank-you` ≡ `/thank-you/`).
+  — unique visitors per step and step→step conversion. `name` is the label
+  shown in that analytics view (defaults to the path when omitted); `path` is
+  the routed page path, normalised (`/thank-you.html` ≡ `/thank-you` ≡
+  `/thank-you/`).
 - `goal`: what counts as a conversion for split-test stats — `"leads"`
   (form leads + calls + Calendly bookings; the default), `"booking"`
   (Calendly bookings only), or `"step:/path"` (unique visitors reaching that
   page, e.g. a post-booking confirmation).
-- Both keys are optional; uploading a manifest replaces the funnel's existing
-  steps/goal. A malformed manifest warns and is ignored — it never blocks a
-  deploy.
+- Every key is optional; uploading a manifest replaces the funnel's existing
+  steps/goal/category for the keys present. A malformed manifest (or a bad
+  value for one key) warns and is ignored — it never blocks a deploy, with the
+  one exception above: a bad `slug` in a bundle errors its row.
+- In a **bundle**, `_shared/funnel.json` sets defaults for every funnel
+  (category, steps, goal once instead of 20 times); each folder's own
+  `funnel.json` overrides it **key by key** (its `steps` replace the shared
+  list wholesale, not per entry). `slug` is dropped from the shared file with
+  a warning — it belongs in each folder.
 
 ## Tracking tags (`tracking.md`)
 
@@ -241,16 +267,24 @@ A **bundle** is a zip whose root contains one folder per funnel — no
 every funnel at once (preview first, then commit).
 
 - Folder name becomes the funnel's URL slug (`commercial-leases-nsw/` →
-  `/commercial-leases-nsw/`). Names that aren't valid slugs are normalised;
-  each folder must contain a valid v1 package (`index.html` at folder root).
+  `/commercial-leases-nsw/`) unless the folder's `funnel.json` sets `slug`
+  (§Manifest), which wins. Folder names that aren't valid slugs are
+  normalised; each folder must contain a valid v1 package (`index.html` at
+  folder root). The preview table shows the resulting slug next to the folder
+  whenever the two differ.
 - An optional `_shared/` folder at the zip root is copied into every funnel
   (the funnel's own file wins on a path collision). Put common images/CSS here
-  once instead of duplicating them per folder.
+  once instead of duplicating them per folder. `_shared/funnel.json` and
+  `_shared/tracking.md` are bundle-wide metadata, never served: the manifest
+  merges key by key, the tracking file is taken whole unless the folder has
+  its own (§Manifest, §Tracking tags).
 - The default funnel name is the `index.html` `<title>`, editable at preview.
-- Imports are idempotent: a folder whose slug matches an existing funnel
-  uploads a **new version** of it; if the content is byte-identical to what's
-  currently serving, it's skipped as unchanged. Re-upload the whole bundle
-  after editing a few funnels — only those change.
+- Imports are idempotent: a folder whose slug (folder name or manifest `slug`)
+  matches an existing funnel uploads a **new version** of it; if the content
+  is byte-identical to what's currently serving, it's skipped as unchanged.
+  Re-upload the whole bundle after editing a few funnels — only those change.
+  Metadata (slug aside) still applies on an unchanged row, so a bundle that
+  only adds categories or step names updates every funnel.
 - Bundle limits: 50 MB zip, 2000 files, 100 MB unpacked (per-funnel limits
   above still apply to each folder).
 - **No wrapping folder — and verify it.** The single-package tolerance for a

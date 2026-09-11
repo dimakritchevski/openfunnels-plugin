@@ -115,6 +115,7 @@ for (const name of htmlFiles) {
 }
 
 // --- funnel.json sanity ---
+let manifestSummary = '';
 if (files.includes('funnel.json')) {
   try {
     const manifest = JSON.parse(readFileSync(join(root, 'funnel.json'), 'utf8'));
@@ -126,6 +127,24 @@ if (files.includes('funnel.json')) {
     if (manifest.goal !== undefined && manifest.goal !== 'leads' && manifest.goal !== 'booking' && !/^step:\//.test(String(manifest.goal))) {
       warnings.push(`funnel.json: unknown goal "${manifest.goal}" — expected "leads", "booking" or "step:/path".`);
     }
+    // "slug" only means something in a bundle import, where a bad one ERRORS
+    // that folder's row (spec v1 §Manifest) — so it's an error here too.
+    if (manifest.slug !== undefined) {
+      if (typeof manifest.slug !== 'string' || !/^[a-z0-9][a-z0-9-]{0,62}$/.test(manifest.slug)) {
+        errors.push(`funnel.json: "slug" "${manifest.slug}" isn't a valid URL slug — lowercase letters, digits and hyphens, starting with a letter or digit, max 63 characters. In a bundle the platform rejects this folder.`);
+      }
+    }
+    if (manifest.category !== undefined && manifest.category !== null && typeof manifest.category !== 'string') {
+      warnings.push('funnel.json: "category" should be a string like "Family Law" — the platform will ignore it.');
+    } else if (typeof manifest.category === 'string' && manifest.category.trim().length > 60) {
+      warnings.push('funnel.json: "category" is over 60 characters — the platform truncates it.');
+    }
+    const parts = [];
+    if (typeof manifest.slug === 'string') parts.push(`slug /${manifest.slug}/ (bundle imports only)`);
+    if (typeof manifest.category === 'string' && manifest.category.trim()) parts.push(`category "${manifest.category.trim()}"`);
+    if (Array.isArray(manifest.steps)) parts.push(`${manifest.steps.length} step(s): ${manifest.steps.map((s) => s?.name || s?.path).join(' → ')}`);
+    if (manifest.goal !== undefined) parts.push(`goal ${manifest.goal}`);
+    manifestSummary = parts.length > 0 ? ` — ${parts.join('; ')}` : '';
   } catch {
     warnings.push('funnel.json is not valid JSON — the platform will ignore it.');
   }
@@ -135,7 +154,7 @@ if (files.includes('funnel.json')) {
 const pages = htmlFiles.filter((f) => f !== '404.html');
 console.log(`Checked ${files.length} file(s), ${pages.length} page(s) in ${root}`);
 if (files.includes('index-b.html')) console.log('Split test: index-b.html present — deploys as a 50/50 A/B test.');
-if (files.includes('funnel.json')) console.log('Manifest: funnel.json present.');
+if (files.includes('funnel.json')) console.log(`Manifest: funnel.json present${manifestSummary}.`);
 if (files.includes('tracking.md')) console.log('Tracking: tracking.md present.');
 for (const e of errors) console.log(`ERROR  ${e}`);
 for (const w of warnings) console.log(`WARN   ${w}`);
