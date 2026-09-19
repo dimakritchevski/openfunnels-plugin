@@ -129,8 +129,14 @@ if (files.includes('funnel.json')) {
       else if (manifest.steps.length > 10) warnings.push(`funnel.json: ${manifest.steps.length} steps — max is 10.`);
       else for (const s of manifest.steps) if (!s?.path) warnings.push('funnel.json: a step is missing its "path" — the platform will skip it.');
     }
-    if (manifest.goal !== undefined && manifest.goal !== 'leads' && manifest.goal !== 'booking' && !/^step:\//.test(String(manifest.goal))) {
-      warnings.push(`funnel.json: unknown goal "${manifest.goal}" — expected "leads", "booking" or "step:/path".`);
+    if (manifest.goal !== undefined && !String(manifest.goal).split(',').map((t) => t.trim()).filter(Boolean)
+      .every((t) => ['leads', 'calls', 'form', 'call', 'booking'].includes(t) || /^step:\/.+/.test(t) || /^click:[a-z0-9][a-z0-9-]{0,39}$/.test(t))) {
+      warnings.push(`funnel.json: unknown goal "${manifest.goal}" — expected a comma list of "form", "call", "booking", "step:/path" and/or "click:name" (or "leads").`);
+    }
+    for (const t of String(manifest.goal ?? '').split(',').map((t) => t.trim())) {
+      if (t.startsWith('click:') && !htmlFiles.some((f) => new RegExp(`data-track-click\\s*=\\s*["']${t.slice(6)}["']`, 'i').test(readFileSync(join(root, f), 'utf8')))) {
+        warnings.push(`funnel.json: goal "${t}" but no page has data-track-click="${t.slice(6)}" — that conversion can never fire (spec §Tracked clicks).`);
+      }
     }
     if (manifest.kind !== undefined && !['funnel', 'form', 'review'].includes(manifest.kind)) {
       warnings.push(`funnel.json: unknown kind "${manifest.kind}" — expected "funnel", "form" or "review" — the platform will ignore it.`);
@@ -153,6 +159,9 @@ if (files.includes('funnel.json')) {
       if (need.length > 0) warnings.push(`funnel.json: kind "review" but the package is missing ${need.join(', ')} — the customer link opens /review-page (spec §Review funnels).`);
       if (!/<form[^>]*\bdata-review-request\b/i.test(readFileSync(join(root, 'index.html'), 'utf8'))) {
         warnings.push('funnel.json: kind "review" but index.html has no data-review-request form — staff will have nothing to send from.');
+      }
+      if (files.includes('yes.html') && !/data-track-click\s*=\s*["']review["']/i.test(readFileSync(join(root, 'yes.html'), 'utf8'))) {
+        warnings.push('yes.html: the review-platform link has no data-track-click="review" — clicks through to the review site won\'t be counted (spec §Review funnels).');
       }
     }
     // "slug" only means something in a bundle import, where a bad one ERRORS

@@ -80,9 +80,16 @@ them with relative hrefs.
   recipients are never notified.
 - The feedback form on `no.html` is an ordinary lead form
   (`data-lead data-form="review-feedback" data-redirect="/thanks"`).
+- Mark the review-platform link on `yes.html` with `data-track-click="review"`.
 - Templates go under `"review"` in `funnel.json` (`sms`, `email_subject`,
   `email_body`; placeholders `{first_name}`, `{business}`, `{link}`); set
-  `"goal": "step:/yes"` and list steps `/review-page`, `/yes`, `/no`, `/thanks`.
+  `"goal": "click:review"` and list steps `/review-page`, `/yes`, `/no`, `/thanks`.
+
+## Tracked clicks
+
+`data-track-click="<name>"` on any link/button reports the click to the
+platform; `"goal": "click:<name>"` (combinable: `"form,click:call"`) makes it
+the conversion. Lowercase letters, digits, hyphens. Spec §Tracked clicks.
 
 ## Before handing over a package
 

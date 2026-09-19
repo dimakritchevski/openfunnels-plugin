@@ -46,7 +46,7 @@ names and one extra form marker; declare it with `"kind": "review"` in
 | `index.html` | staff | the send form: `first_name`, `email`, `phone` |
 | `sent.html` | staff | "request sent" + a link back to `./` |
 | `review-page.html` | customer | "Did you have a great experience?" → **Yes** links to `yes`, **No** links to `no` |
-| `yes.html` | customer | link to the review platform (Google's write-a-review URL) |
+| `yes.html` | customer | link to the review platform (Google's write-a-review URL), marked `data-track-click="review"` |
 | `no.html` | customer | private feedback form (an ordinary lead form, see below) |
 | `thanks.html` | customer | feedback received |
 
@@ -102,7 +102,7 @@ plain and short and always include `{link}`.
     { "name": "Unhappy (No)",  "path": "/no" },
     { "name": "Feedback sent", "path": "/thanks" }
   ],
-  "goal": "step:/yes",
+  "goal": "click:review",
   "review": {
     "sms": "Hi {first_name}, thanks for choosing {business}. Would you mind sharing how your experience was? It takes under a minute: {link}",
     "email_subject": "How was your experience with {business}?",
@@ -112,9 +112,12 @@ plain and short and always include `{link}`.
 ```
 
 In the email body, blank lines start a new paragraph and a line holding only
-`{link}` renders as a button. Set `goal` to `step:/yes` so the funnel's
-conversion is "the customer said they were happy"; step analytics then show
-requests → review page → yes / no.
+`{link}` renders as a button. Mark the review-platform link on `yes.html`
+with `data-track-click="review"` and set `goal` to `click:review`: the
+conversion is then "the customer clicked through to leave a review", which is
+the number that matters. (`step:/yes` = "said they were happy" is the softer
+alternative.) The funnel page shows requests sent → opened review page →
+clicked review link → feedback.
 
 ## Editable-content markers (`data-edit` / `data-section`)
 
@@ -268,8 +271,24 @@ count towards the version's content hash.
   `/thank-you/`).
 - `goal`: what counts as a conversion for split-test stats — `"leads"`
   (form leads + calls + Calendly bookings; the default), `"booking"`
-  (Calendly bookings only), or `"step:/path"` (unique visitors reaching that
-  page, e.g. a post-booking confirmation).
+  (Calendly bookings only), `"step:/path"` (unique visitors reaching that
+  page, e.g. a post-booking confirmation), or `"click:<name>"` (unique
+  visitors who clicked an element marked `data-track-click="<name>"`, see
+  below). Tokens combine with commas: `"form,call,click:review"`.
+
+## Tracked clicks (`data-track-click`)
+
+Put `data-track-click="<name>"` on any link or button whose click matters —
+an outbound link to a review platform, a "call now" button, a PDF download.
+The platform snippet reports the click (with keepalive, so it survives the
+navigation) and the funnel's goal can be `click:<name>`; the Steps tab's goal
+picker lists every name the pages have reported. Names: lowercase letters,
+digits and hyphens, up to 40 characters. One visitor counts once per name.
+
+```html
+<a href="https://search.google.com/local/writereview?placeid=…"
+   target="_blank" rel="noopener" data-track-click="review">Leave a review on Google</a>
+```
 - Every key is optional; uploading a manifest replaces the funnel's existing
   steps/goal/category for the keys present. A malformed manifest (or a bad
   value for one key) warns and is ignored — it never blocks a deploy, with the
