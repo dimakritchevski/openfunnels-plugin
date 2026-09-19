@@ -9,7 +9,11 @@ spec; violations are rejected with a clear error.
 - `index.html` **must** exist at the zip root (a single wrapping top-level
   folder is tolerated and stripped automatically).
 - Other pages route by filename: `thank-you.html` → `/thank-you`,
-  `pricing/index.html` → `/pricing/`.
+  `pricing/index.html` → `/pricing/`. A page's public path can be changed
+  later in the admin (funnel → Steps → Pages & URLs) without touching the
+  package; the filename path then redirects to the new one, so relative links
+  inside the package keep working. The funnel's own URL path (its folder on
+  the client domain) is set when the funnel is created and editable there too.
 - `404.html` at the root, if present, is served for unknown paths.
 - All asset references must be **relative** paths (`assets/style.css`,
   `images/hero.webp`) — never root-relative (`/images/…`), because preview URLs
