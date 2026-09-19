@@ -86,6 +86,10 @@ between them with **relative** hrefs (`yes`, `no`, `./`), never `/yes`.
 On a review funnel its submissions are worded as "review feedback" in email
 and Slack, are never texted, and appear on the **Feedback** tab.
 
+**The email** is best shipped as a designed template at `emails/review.html`
+(see §Emails) - logo, headline, body, button - editable in the funnel editor.
+Without one, the plain-text template below is used.
+
 **Message templates** live in `funnel.json` under `"review"` and can be edited
 later on the funnel's Settings tab. Placeholders: `{first_name}` (blank →
 "there"), `{business}` (the client's name), `{link}` (the review page URL).
@@ -275,6 +279,28 @@ count towards the version's content hash.
   page, e.g. a post-booking confirmation), or `"click:<name>"` (unique
   visitors who clicked an element marked `data-track-click="<name>"`, see
   below). Tokens combine with commas: `"form,call,click:review"`.
+
+## Emails (`emails/`)
+
+Files under `emails/` are email templates the platform sends, not web pages:
+they are **never served** on the live funnel (404), never listed as steps or
+pages, and never counted as visits. Version previews still open them, which
+is how the funnel editor edits them like any page (click text to type, click
+the logo to swap it) and how the admin's Settings card previews them.
+
+- `emails/review.html` (review funnels): the review-request email. Same
+  placeholders as the text templates: `{first_name}`, `{business}`, `{link}`.
+- Write it as an email: table layout, inline CSS, 600px wide, **PNG or JPG
+  images only** (Gmail strips SVG), and one `<a href="{link}">` button.
+  Reference package assets from the email as `../images/logo.png` (the
+  template sits one folder down, so previews and the editor resolve it); at
+  send time every relative path is rewritten to an absolute URL on the
+  funnel's public host - the assets are already public. A plain-text
+  alternative is generated from the HTML.
+- Mark texts with `data-edit` as on a page. Keep a `<title>`, `<head>` and
+  `<body>` like every other HTML file in the package.
+- A package without `emails/review.html` keeps using the plain-text
+  `email_body` template from `funnel.json` / the Settings tab.
 
 ## Tracked clicks (`data-track-click`)
 

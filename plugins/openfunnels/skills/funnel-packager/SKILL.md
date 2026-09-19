@@ -81,6 +81,12 @@ them with relative hrefs.
 - The feedback form on `no.html` is an ordinary lead form
   (`data-lead data-form="review-feedback" data-redirect="/thanks"`).
 - Mark the review-platform link on `yes.html` with `data-track-click="review"`.
+- Ship the review email as `emails/review.html`: a 600px table-layout HTML
+  email, inline CSS, PNG/JPG logo (never SVG), `{first_name}`, `{business}`
+  and one `<a href="{link}">` button, `data-edit` on texts. Files under
+  `emails/` are sent, never served; reference assets as `../images/…` and
+  they are absolutised at send time. Without it the plain-text `email_body`
+  template is used.
 - Templates go under `"review"` in `funnel.json` (`sms`, `email_subject`,
   `email_body`; placeholders `{first_name}`, `{business}`, `{link}`); set
   `"goal": "click:review"` and list steps `/review-page`, `/yes`, `/no`, `/thanks`.

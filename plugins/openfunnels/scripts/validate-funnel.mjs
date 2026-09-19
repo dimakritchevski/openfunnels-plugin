@@ -76,6 +76,21 @@ for (const name of htmlFiles) {
     warnings.push('index.html has a <form> without data-lead — its submissions will not be captured as leads (spec v1 §Forms).');
   }
 
+  // Email templates (spec §Emails): sent, never served. SVG images and a
+  // missing {link} are the two silent breakages in mail clients.
+  if (/^emails\//i.test(name)) {
+    if (/<img[^>]+src\s*=\s*["'][^"']+\.svg(\?[^"']*)?["']/i.test(html)) {
+      warnings.push(`${name}: uses an SVG image — Gmail and Outlook won't show it. Use a PNG or JPG (spec §Emails).`);
+    }
+    if (/review\.html?$/i.test(name) && !/\{link\}/.test(html)) {
+      warnings.push(`${name}: has no {link} placeholder — the customer gets no way to reach the review page (spec §Emails).`);
+    }
+    if (/\b(?:src|href)\s*=\s*["']https?:\/\/[^"']*\.svg["']/i.test(html)) {
+      warnings.push(`${name}: links to an SVG — mail clients will not render it.`);
+    }
+    continue; // the page checks below don't apply to an email
+  }
+
   // Platform WARNS: data-section without id can't be deep-linked.
   const unanchored = [...html.matchAll(/<[a-z][^>]*\bdata-section\b[^>]*>/gi)]
     .filter((m) => !/\bid\s*=/i.test(m[0])).length;
