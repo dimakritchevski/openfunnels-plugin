@@ -70,8 +70,9 @@ for (const name of htmlFiles) {
     errors.push(`${name}: missing ${missing.join(' and ')}. The platform injects tracking and the lead-capture snippet at those tags — add explicit <head> and <body> elements.`);
   }
 
-  // Platform WARNS: forms without data-lead are not captured.
-  if (name === 'index.html' && /<form[\s>]/i.test(html) && !/<form[^>]*\bdata-lead\b/i.test(html)) {
+  // Platform WARNS: forms without data-lead are not captured. A review
+  // funnel's index form is data-review-request instead (spec §Review funnels).
+  if (name === 'index.html' && /<form[\s>]/i.test(html) && !/<form[^>]*\b(data-lead|data-review-request)\b/i.test(html)) {
     warnings.push('index.html has a <form> without data-lead — its submissions will not be captured as leads (spec v1 §Forms).');
   }
 
@@ -91,11 +92,15 @@ for (const name of htmlFiles) {
     warnings.push(`${name}: root-relative reference(s) will 404 under the funnel's path prefix — make them relative: ${[...new Set(rootRel)].slice(0, 5).join(', ')}${rootRel.length > 5 ? ' …' : ''}`);
   }
 
-  // Local lint: every data-lead form needs the honeypot field.
+  // Local lint: every data-lead / data-review-request form needs the honeypot field.
   for (const form of html.split(/<form\b/i).slice(1)) {
     const formHtml = form.slice(0, form.search(/<\/form>/i) === -1 ? undefined : form.search(/<\/form>/i));
-    if (/^[^>]*\bdata-lead\b/i.test(formHtml) && !/name\s*=\s*["']company_website["']/i.test(formHtml)) {
-      warnings.push(`${name}: a data-lead form is missing the honeypot input (name="company_website", class="hp", hidden off-screen — spec v1 §Forms).`);
+    const marker = /^[^>]*\bdata-lead\b/i.test(formHtml) ? 'data-lead' : /^[^>]*\bdata-review-request\b/i.test(formHtml) ? 'data-review-request' : null;
+    if (marker && !/name\s*=\s*["']company_website["']/i.test(formHtml)) {
+      warnings.push(`${name}: a ${marker} form is missing the honeypot input (name="company_website", class="hp", hidden off-screen — spec v1 §Forms).`);
+    }
+    if (marker === 'data-review-request' && name !== 'index.html') {
+      warnings.push(`${name}: a data-review-request form belongs on index.html (the staff send page) — spec §Review funnels.`);
     }
   }
 
@@ -127,6 +132,29 @@ if (files.includes('funnel.json')) {
     if (manifest.goal !== undefined && manifest.goal !== 'leads' && manifest.goal !== 'booking' && !/^step:\//.test(String(manifest.goal))) {
       warnings.push(`funnel.json: unknown goal "${manifest.goal}" — expected "leads", "booking" or "step:/path".`);
     }
+    if (manifest.kind !== undefined && !['funnel', 'form', 'review'].includes(manifest.kind)) {
+      warnings.push(`funnel.json: unknown kind "${manifest.kind}" — expected "funnel", "form" or "review" — the platform will ignore it.`);
+    }
+    if (manifest.review !== undefined) {
+      if (!manifest.review || typeof manifest.review !== 'object' || Array.isArray(manifest.review)) {
+        warnings.push('funnel.json: "review" should be an object with "sms", "email_subject" and/or "email_body" — the platform will ignore it.');
+      } else {
+        for (const k of ['sms', 'email_subject', 'email_body']) {
+          if (manifest.review[k] !== undefined && typeof manifest.review[k] !== 'string') warnings.push(`funnel.json: review.${k} should be a string — ignored.`);
+        }
+        if (typeof manifest.review.sms === 'string' && manifest.review.sms.trim() && !manifest.review.sms.includes('{link}')) {
+          warnings.push('funnel.json: review.sms has no {link} placeholder — the customer gets no way to leave a review.');
+        }
+        if (manifest.kind !== 'review') warnings.push('funnel.json: "review" templates only take effect with "kind": "review".');
+      }
+    }
+    if (manifest.kind === 'review') {
+      const need = ['review-page.html', 'yes.html', 'no.html'].filter((p) => !files.includes(p));
+      if (need.length > 0) warnings.push(`funnel.json: kind "review" but the package is missing ${need.join(', ')} — the customer link opens /review-page (spec §Review funnels).`);
+      if (!/<form[^>]*\bdata-review-request\b/i.test(readFileSync(join(root, 'index.html'), 'utf8'))) {
+        warnings.push('funnel.json: kind "review" but index.html has no data-review-request form — staff will have nothing to send from.');
+      }
+    }
     // "slug" only means something in a bundle import, where a bad one ERRORS
     // that folder's row (spec v1 §Manifest) — so it's an error here too.
     if (manifest.slug !== undefined) {
@@ -155,6 +183,11 @@ const pages = htmlFiles.filter((f) => f !== '404.html');
 console.log(`Checked ${files.length} file(s), ${pages.length} page(s) in ${root}`);
 if (files.includes('index-b.html')) console.log('Split test: index-b.html present — deploys as a 50/50 A/B test.');
 if (files.includes('funnel.json')) console.log(`Manifest: funnel.json present${manifestSummary}.`);
+try {
+  const k = JSON.parse(readFileSync(join(root, 'funnel.json'), 'utf8')).kind;
+  if (k === 'review') console.log('Kind: review funnel — index.html sends review requests; customer pages review-page / yes / no / thanks.');
+  else if (k === 'form') console.log('Kind: form (submissions only).');
+} catch { /* no manifest or unreadable - reported above */ }
 if (files.includes('tracking.md')) console.log('Tracking: tracking.md present.');
 for (const e of errors) console.log(`ERROR  ${e}`);
 for (const w of warnings) console.log(`WARN   ${w}`);

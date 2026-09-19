@@ -29,6 +29,89 @@ spec; violations are rejected with a clear error.
   `<input name="company_website" class="hp" tabindex="-1" autocomplete="off">`
   (hide `.hp` off-screen in CSS — do not use `display:none`).
 
+## Review funnels (`"kind": "review"`)
+
+A **review funnel** is the third funnel kind (after landing pages and forms):
+staff send a customer a review request, happy customers go to Google, unhappy
+ones leave private feedback. It is an ordinary v1 package with fixed page
+names and one extra form marker; declare it with `"kind": "review"` in
+`funnel.json` (or pick "Review funnel" when adding the funnel by hand).
+
+| Page | Who sees it | Purpose |
+|---|---|---|
+| `index.html` | staff | the send form: `first_name`, `email`, `phone` |
+| `sent.html` | staff | "request sent" + a link back to `./` |
+| `review-page.html` | customer | "Did you have a great experience?" → **Yes** links to `yes`, **No** links to `no` |
+| `yes.html` | customer | link to the review platform (Google's write-a-review URL) |
+| `no.html` | customer | private feedback form (an ordinary lead form, see below) |
+| `thanks.html` | customer | feedback received |
+
+`index.html`, `review-page.html`, `yes.html` and `no.html` are required for a
+review funnel; the platform routes them by filename like any other page. Link
+between them with **relative** hrefs (`yes`, `no`, `./`), never `/yes`.
+
+**The send form** is marked `data-review-request`, not `data-lead`:
+
+```html
+<form data-review-request data-redirect="/sent"
+      action="/_platform/review-request" method="POST">
+  <input name="first_name" placeholder="Client's first name">
+  <input name="email" type="email" required>
+  <input name="phone" type="tel" required>
+  <input name="company_website" class="hp" tabindex="-1" autocomplete="off">
+  <p class="error" data-error hidden></p>
+  <button type="submit">Send review request</button>
+</form>
+```
+
+- On submit the platform stores the request (visible on the funnel's
+  **Requests** tab, never in Leads) and sends the **customer** an SMS and an
+  email carrying a link to this funnel's `/review-page` on the same host the
+  request was sent from. The client's own lead recipients are not notified.
+- `data-redirect` defaults to `/sent`. The honeypot is required as for lead
+  forms. The no-JS fallback `action` is remounted like `/_platform/lead`.
+- An optional element with `data-error` inside the form receives validation
+  messages (bad phone, daily cap hit); without one the browser alerts.
+- Phone numbers are normalised to E.164 (Australian `04xx` accepted); an
+  invalid number or email is rejected with a message, not sent.
+- Caps: 20 requests per IP per 10 minutes, 100 per funnel per hour, 3 per
+  customer per day. Keep the index page URL unlisted; it has no login.
+
+**The feedback form** on `no.html` is a normal lead form
+(`<form data-lead data-form="review-feedback" data-redirect="/thanks">`).
+On a review funnel its submissions are worded as "review feedback" in email
+and Slack, are never texted, and appear on the **Feedback** tab.
+
+**Message templates** live in `funnel.json` under `"review"` and can be edited
+later on the funnel's Settings tab. Placeholders: `{first_name}` (blank →
+"there"), `{business}` (the client's name), `{link}` (the review page URL).
+Keys are merged over the funnel's stored templates on deploy; omit a key to
+leave it alone. SMS is forced to GSM-7 and cut at 459 characters, so keep it
+plain and short and always include `{link}`.
+
+```json
+{
+  "kind": "review",
+  "steps": [
+    { "name": "Review page",   "path": "/review-page" },
+    { "name": "Happy (Yes)",   "path": "/yes" },
+    { "name": "Unhappy (No)",  "path": "/no" },
+    { "name": "Feedback sent", "path": "/thanks" }
+  ],
+  "goal": "step:/yes",
+  "review": {
+    "sms": "Hi {first_name}, thanks for choosing {business}. Would you mind sharing how your experience was? It takes under a minute: {link}",
+    "email_subject": "How was your experience with {business}?",
+    "email_body": "Hi {first_name},\n\nThank you for choosing {business}. ...\n\n{link}\n\nKind regards,\n{business}"
+  }
+}
+```
+
+In the email body, blank lines start a new paragraph and a line holding only
+`{link}` renders as a button. Set `goal` to `step:/yes` so the funnel's
+conversion is "the customer said they were happy"; step analytics then show
+requests → review page → yes / no.
+
 ## Editable-content markers (`data-edit` / `data-section`)
 
 Mark every piece of content a human might later want to change — headlines,

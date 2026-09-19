@@ -64,6 +64,26 @@ never rely on memory of an older version.
   automatically. Use `data-booking-redirect="/path"` for post-booking
   navigation, not Calendly's own redirect setting.
 
+## Review funnels (`"kind": "review"` in funnel.json)
+
+Staff send a customer a review request; happy customers go to Google, unhappy
+ones leave private feedback. Fixed pages: `index.html` (staff send form),
+`sent.html`, `review-page.html` (Yes → `yes`, No → `no`), `yes.html` (Google
+write-a-review link), `no.html` (feedback form), `thanks.html`. Link between
+them with relative hrefs.
+
+- The send form is **`data-review-request`**, not `data-lead`:
+  `<form data-review-request data-redirect="/sent" action="/_platform/review-request" method="POST">`
+  with `first_name`, `email`, `phone` inputs, the honeypot, and an optional
+  `<p data-error hidden></p>` for validation messages. The platform texts and
+  emails the **customer** a link to `/review-page`; the client's lead
+  recipients are never notified.
+- The feedback form on `no.html` is an ordinary lead form
+  (`data-lead data-form="review-feedback" data-redirect="/thanks"`).
+- Templates go under `"review"` in `funnel.json` (`sms`, `email_subject`,
+  `email_body`; placeholders `{first_name}`, `{business}`, `{link}`); set
+  `"goal": "step:/yes"` and list steps `/review-page`, `/yes`, `/no`, `/thanks`.
+
 ## Before handing over a package
 
 Run the bundled validator on the funnel directory — it applies the same rules
