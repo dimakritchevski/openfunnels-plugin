@@ -72,6 +72,11 @@ between them with **relative** hrefs (`yes`, `no`, `./`), never `/yes`.
   **Requests** tab, never in Leads) and sends the **customer** an SMS and an
   email carrying a link to this funnel's `/review-page` on the same host the
   request was sent from. The client's own lead recipients are not notified.
+- The link carries `?r=<request id>`; the snippet keeps it for the session,
+  so the Requests tab shows **opened** and **clicked** per request. An
+  optional `last_name` input on the send form is stored with the request
+  (never used in the messages) so a Google review "Sam T." can be matched
+  to it later.
 - `data-redirect` defaults to `/sent`. The honeypot is required as for lead
   forms. The no-JS fallback `action` is remounted like `/_platform/lead`.
 - An optional element with `data-error` inside the form receives validation
