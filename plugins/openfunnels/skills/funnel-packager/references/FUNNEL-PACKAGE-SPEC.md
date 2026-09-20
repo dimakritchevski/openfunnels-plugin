@@ -43,7 +43,7 @@ names and one extra form marker; declare it with `"kind": "review"` in
 
 | Page | Who sees it | Purpose |
 |---|---|---|
-| `index.html` | staff | the send form: `first_name`, `email`, `phone` |
+| `index.html` | staff | the send form: `first_name`, `last_name`, `phone` (required), `email` (optional) |
 | `sent.html` | staff | "request sent" + a link back to `./` |
 | `review-page.html` | customer | "Did you have a great experience?" → **Yes** links to `yes`, **No** links to `no` |
 | `yes.html` | customer | link to the review platform (Google's write-a-review URL), marked `data-track-click="review"` |
@@ -59,9 +59,10 @@ between them with **relative** hrefs (`yes`, `no`, `./`), never `/yes`.
 ```html
 <form data-review-request data-redirect="/sent"
       action="/_platform/review-request" method="POST">
-  <input name="first_name" placeholder="Client's first name">
-  <input name="email" type="email" required>
+  <input name="first_name" required>
+  <input name="last_name" required>
   <input name="phone" type="tel" required>
+  <input name="email" type="email">
   <input name="company_website" class="hp" tabindex="-1" autocomplete="off">
   <p class="error" data-error hidden></p>
   <button type="submit">Send review request</button>
@@ -81,8 +82,9 @@ between them with **relative** hrefs (`yes`, `no`, `./`), never `/yes`.
   forms. The no-JS fallback `action` is remounted like `/_platform/lead`.
 - An optional element with `data-error` inside the form receives validation
   messages (bad phone, daily cap hit); without one the browser alerts.
-- Phone numbers are normalised to E.164 (Australian `04xx` accepted); an
-  invalid number or email is rejected with a message, not sent.
+- Mobile is required and normalised to E.164 (`0412 345 678`, `+61 412…`,
+  `61412…` and `412 345 678` all work); email is optional. An invalid number
+  or email is rejected with a message, not sent.
 - Caps: 20 requests per IP per 10 minutes, 100 per funnel per hour, 3 per
   customer per day. Keep the index page URL unlisted; it has no login.
 
