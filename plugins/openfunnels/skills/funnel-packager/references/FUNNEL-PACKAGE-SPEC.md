@@ -73,6 +73,11 @@ between them with **relative** hrefs (`yes`, `no`, `./`), never `/yes`.
   **Requests** tab, never in Leads) and sends the **customer** an SMS and an
   email carrying a link to this funnel's `/review-page` on the same host the
   request was sent from. The client's own lead recipients are not notified.
+- After a send the staff member lands on `data-redirect` (default `/sent`)
+  with `?n=<first name>&c=<s|e|se>` (which channels went out), so the sent
+  page can confirm "Sam will get a text and an email". The snippet also
+  exposes `window.__lmt.admin` (the admin origin) and `window.__lmt.funnel`,
+  so a staff page can link to `admin + '/funnels/' + funnel + '?tab=requests'`.
 - The link carries `?r=<request id>`; the snippet keeps it for the session,
   so the Requests tab shows **opened** and **clicked** per request. An
   optional `last_name` input on the send form is stored with the request
