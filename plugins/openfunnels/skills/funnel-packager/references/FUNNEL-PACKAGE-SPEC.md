@@ -103,10 +103,12 @@ and Slack, are never texted, and appear on the **Feedback** tab.
 Without one, the plain-text template below is used.
 
 **Message templates** live in `funnel.json` under `"review"` and can be edited
-later on the funnel's Settings tab. An optional `"sms_b"` starts an **SMS
-split test**: while it is non-blank, each request is texted A or B at random
-and the funnel's Requests tab reports opened / clicked per text with a
-confidence readout. Clear it to end the test. Placeholders: `{first_name}` (blank →
+later on the client's Reviews → Messages tab. An optional `"sms_b"` starts an
+**SMS split test**: while it is non-blank, each request is texted A or B at
+random and the Messages tab reports opened / clicked per text with a
+confidence readout. `"email_subject_b"` does the same for the email subject
+line (only requests that had an email take part). Ending a test (keep A or
+keep B) is a button on that tab. Placeholders: `{first_name}` (blank →
 "there"), `{business}` (the client's name), `{link}` (the review page URL).
 Keys are merged over the funnel's stored templates on deploy; omit a key to
 leave it alone. SMS is forced to GSM-7 and cut at 459 characters, so keep it
@@ -126,6 +128,7 @@ plain and short and always include `{link}`.
     "sms": "Hi {first_name}, thanks for choosing {business}. Would you mind sharing how your experience was? It takes under a minute: {link}",
     "sms_b": "",
     "email_subject": "How was your experience with {business}?",
+    "email_subject_b": "",
     "email_body": "Hi {first_name},\n\nThank you for choosing {business}. ...\n\n{link}\n\nKind regards,\n{business}"
   }
 }
