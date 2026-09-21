@@ -114,8 +114,8 @@ for (const name of htmlFiles) {
     if (marker && !/name\s*=\s*["']company_website["']/i.test(formHtml)) {
       warnings.push(`${name}: a ${marker} form is missing the honeypot input (name="company_website", class="hp", hidden off-screen — spec v1 §Forms).`);
     }
-    if (marker === 'data-review-request' && name !== 'index.html') {
-      warnings.push(`${name}: a data-review-request form belongs on index.html (the staff send page) — spec §Review funnels.`);
+    if (marker === 'data-review-request' && name === 'index.html') {
+      warnings.push('index.html: the staff send form is at the root — a customer trimming their link lands on it. Put it on review-request.html and make index.html the customer page (spec §Review funnels, 2026-09-21 layout).');
     }
   }
 
@@ -170,10 +170,10 @@ if (files.includes('funnel.json')) {
       }
     }
     if (manifest.kind === 'review') {
-      const need = ['review-page.html', 'yes.html', 'no.html'].filter((p) => !files.includes(p));
-      if (need.length > 0) warnings.push(`funnel.json: kind "review" but the package is missing ${need.join(', ')} — the customer link opens /review-page (spec §Review funnels).`);
-      if (!/<form[^>]*\bdata-review-request\b/i.test(readFileSync(join(root, 'index.html'), 'utf8'))) {
-        warnings.push('funnel.json: kind "review" but index.html has no data-review-request form — staff will have nothing to send from.');
+      const need = ['yes.html', 'no.html', 'review-request.html'].filter((p) => !files.includes(p));
+      if (need.length > 0) warnings.push(`funnel.json: kind "review" but the package is missing ${need.join(', ')} — the customer link opens the root (index.html), staff send from review-request.html (spec §Review funnels).`);
+      if (files.includes('review-request.html') && !/<form[^>]*\bdata-review-request\b/i.test(readFileSync(join(root, 'review-request.html'), 'utf8'))) {
+        warnings.push('funnel.json: kind "review" but review-request.html has no data-review-request form — staff will have nothing to send from.');
       }
       if (files.includes('yes.html') && !/data-track-click\s*=\s*["']review["']/i.test(readFileSync(join(root, 'yes.html'), 'utf8'))) {
         warnings.push('yes.html: the review-platform link has no data-track-click="review" — clicks through to the review site won\'t be counted (spec §Review funnels).');
@@ -209,7 +209,7 @@ if (files.includes('index-b.html')) console.log('Split test: index-b.html presen
 if (files.includes('funnel.json')) console.log(`Manifest: funnel.json present${manifestSummary}.`);
 try {
   const k = JSON.parse(readFileSync(join(root, 'funnel.json'), 'utf8')).kind;
-  if (k === 'review') console.log('Kind: review funnel — index.html sends review requests; customer pages review-page / yes / no / thanks.');
+  if (k === 'review') console.log('Kind: review funnel — index.html is the customer page (the link they get); yes / no / thanks; staff send from review-request.html.');
   else if (k === 'form') console.log('Kind: form (submissions only).');
 } catch { /* no manifest or unreadable - reported above */ }
 if (files.includes('tracking.md')) console.log('Tracking: tracking.md present.');

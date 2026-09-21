@@ -43,16 +43,20 @@ names and one extra form marker; declare it with `"kind": "review"` in
 
 | Page | Who sees it | Purpose |
 |---|---|---|
-| `index.html` | staff | the send form: `first_name`, `last_name`, `phone` (required), `email` (optional) |
-| `sent.html` | staff | "request sent" + a link back to `./` |
-| `review-page.html` | customer | "Did you have a great experience?" → **Yes** links to `yes`, **No** links to `no` |
+| `index.html` | customer | the funnel root: "Did you have a great experience?" → **Yes** links to `yes`, **No** links to `no`. This is the page the customer's link opens |
 | `yes.html` | customer | link to the review platform (Google's write-a-review URL), marked `data-track-click="review"` |
 | `no.html` | customer | private feedback form (an ordinary lead form, see below) |
 | `thanks.html` | customer | feedback received |
+| `review-request.html` | staff | the send form: `first_name`, `last_name`, `phone` (required), `email` (optional) |
+| `sent.html` | staff | "request sent" + a link back to `review-request` |
 
-`index.html`, `review-page.html`, `yes.html` and `no.html` are required for a
-review funnel; the platform routes them by filename like any other page. Link
-between them with **relative** hrefs (`yes`, `no`, `./`), never `/yes`.
+`index.html`, `yes.html`, `no.html` and `review-request.html` are required for
+a review funnel; the platform routes them by filename like any other page. Link
+between them with **relative** hrefs (`yes`, `no`, `review-request`), never
+`/yes`. The customer page is the root on purpose: a customer who trims their
+link back to the folder lands on their own page, never on the staff send form.
+(Packages built before 2026-09-21 had the send form at the root and the
+customer page at `review-page.html`; rebuild them to this layout.)
 
 **The send form** is marked `data-review-request`, not `data-lead`:
 
@@ -71,8 +75,8 @@ between them with **relative** hrefs (`yes`, `no`, `./`), never `/yes`.
 
 - On submit the platform stores the request (visible on the funnel's
   **Requests** tab, never in Leads) and sends the **customer** an SMS and an
-  email carrying a link to this funnel's `/review-page` on the same host the
-  request was sent from. The client's own lead recipients are not notified.
+  email carrying a link to this funnel's root (`<base>/?r=<request>&n=<name>`)
+  on the same host the request was sent from. The client's own lead recipients are not notified.
 - After a send the staff member lands on `data-redirect` (default `/sent`)
   with `?n=<first name>&c=<s|e|se>` (which channels went out), so the sent
   page can confirm "Sam will get a text and an email". The snippet also
@@ -118,7 +122,7 @@ plain and short and always include `{link}`.
 {
   "kind": "review",
   "steps": [
-    { "name": "Review page",   "path": "/review-page" },
+    { "name": "Review page",   "path": "/" },
     { "name": "Happy (Yes)",   "path": "/yes" },
     { "name": "Unhappy (No)",  "path": "/no" },
     { "name": "Feedback sent", "path": "/thanks" }

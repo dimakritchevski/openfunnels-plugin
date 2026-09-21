@@ -67,16 +67,18 @@ never rely on memory of an older version.
 ## Review funnels (`"kind": "review"` in funnel.json)
 
 Staff send a customer a review request; happy customers go to Google, unhappy
-ones leave private feedback. Fixed pages: `index.html` (staff send form),
-`sent.html`, `review-page.html` (Yes → `yes`, No → `no`), `yes.html` (Google
-write-a-review link), `no.html` (feedback form), `thanks.html`. Link between
-them with relative hrefs.
+ones leave private feedback. Fixed pages: `index.html` (the customer's Yes →
+`yes` / No → `no` page - the funnel root and the link they receive),
+`yes.html` (Google write-a-review link), `no.html` (feedback form),
+`thanks.html`, `review-request.html` (staff send form), `sent.html`. Link
+between them with relative hrefs. The customer page is the root on purpose:
+trimming a customer link never lands on the staff form.
 
 - The send form is **`data-review-request`**, not `data-lead`:
   `<form data-review-request data-redirect="/sent" action="/_platform/review-request" method="POST">`
   with `first_name`, `email`, `phone` inputs, the honeypot, and an optional
   `<p data-error hidden></p>` for validation messages. The platform texts and
-  emails the **customer** a link to `/review-page`; the client's lead
+  emails the **customer** a link to the funnel root; the client's lead
   recipients are never notified.
 - The feedback form on `no.html` is an ordinary lead form
   (`data-lead data-form="review-feedback" data-redirect="/thanks"`).
@@ -89,7 +91,7 @@ them with relative hrefs.
   template is used.
 - Templates go under `"review"` in `funnel.json` (`sms`, `email_subject`,
   `email_body`; placeholders `{first_name}`, `{business}`, `{link}`); set
-  `"goal": "click:review"` and list steps `/review-page`, `/yes`, `/no`, `/thanks`.
+  `"goal": "click:review"` and list steps `/`, `/yes`, `/no`, `/thanks`.
 
 ## Tracked clicks
 
