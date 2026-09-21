@@ -32,6 +32,13 @@ spec; violations are rejected with a clear error.
 - Include the honeypot field in every lead form:
   `<input name="company_website" class="hp" tabindex="-1" autocomplete="off">`
   (hide `.hp` off-screen in CSS — do not use `display:none`).
+- Mark required inputs `required`. The platform enforces them on submit:
+  a form that fails the browser's validity check is never sent — **even with
+  `novalidate`** — and the first bad field gets the browser's own message
+  (skipped when the page's submit handler has already focused a field, so a
+  custom error banner keeps working). A form whose every value is blank is
+  refused the same way. Server-side, an all-blank submission is stored as
+  spam and never notified, so the no-JS fallback is covered too.
 
 ## Review funnels (`"kind": "review"`)
 

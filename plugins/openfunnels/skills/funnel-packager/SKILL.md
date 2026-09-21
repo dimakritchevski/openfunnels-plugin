@@ -31,6 +31,8 @@ never rely on memory of an older version.
 - Every lead form includes the honeypot:
   `<input name="company_website" class="hp" tabindex="-1" autocomplete="off">`
   with `.hp` hidden **off-screen in CSS** (never `display:none`).
+- Mark required inputs `required`. The platform refuses to send a form that
+  fails the browser's validity check (even with `novalidate`) or is all-blank.
 
 ## Editable markers — the rules people get wrong
 
