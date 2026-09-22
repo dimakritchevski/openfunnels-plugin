@@ -275,9 +275,9 @@ count towards the version's content hash.
   "slug": "adi-business-lawyer-sydney-lp",
   "category": "Business Law",
   "steps": [
-    { "name": "Landing page", "path": "/" },
-    { "name": "Book a call",  "path": "/book-a-call" },
-    { "name": "Booked",       "path": "/thank-you" }
+    { "name": "Landing page", "path": "/",            "role": "landing" },
+    { "name": "Book a call",  "path": "/book-a-call", "role": "booking" },
+    { "name": "Booked",       "path": "/thank-you",   "role": "thankyou" }
   ],
   "goal": "step:/thank-you"
 }
@@ -302,7 +302,14 @@ count towards the version's content hash.
   — unique visitors per step and step→step conversion. `name` is the label
   shown in that analytics view (defaults to the path when omitted); `path` is
   the routed page path, normalised (`/thank-you.html` ≡ `/thank-you` ≡
-  `/thank-you/`).
+  `/thank-you/`). `role` says what the page is **for**, one of `landing`,
+  `form`, `booking`, `thankyou`, `review`, `other`. The platform uses roles to
+  know what a funnel can produce: only a funnel with a `booking` page shows
+  bookings (tiles, chart, goal options); a `form` page is an onboarding form
+  whose submissions are never leads. Omit it and the platform guesses from the
+  path (`/` → landing, `book`/`calendly`/`appointment`/`schedule` → booking,
+  `thank`/`success`/`confirm` → thankyou); an unknown value warns and falls
+  back to the guess. Set it explicitly whenever the page names are unusual.
 - `goal`: what counts as a conversion for split-test stats — `"leads"`
   (form leads + calls + Calendly bookings; the default), `"booking"`
   (Calendly bookings only), `"step:/path"` (unique visitors reaching that

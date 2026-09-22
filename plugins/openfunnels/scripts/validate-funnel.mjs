@@ -142,7 +142,11 @@ if (files.includes('funnel.json')) {
     if (manifest.steps !== undefined) {
       if (!Array.isArray(manifest.steps)) warnings.push('funnel.json: "steps" should be an array of {name, path} — the platform will ignore it.');
       else if (manifest.steps.length > 10) warnings.push(`funnel.json: ${manifest.steps.length} steps — max is 10.`);
-      else for (const s of manifest.steps) if (!s?.path) warnings.push('funnel.json: a step is missing its "path" — the platform will skip it.');
+      else for (const s of manifest.steps) {
+        if (!s?.path) warnings.push('funnel.json: a step is missing its "path" — the platform will skip it.');
+        else if (s.role !== undefined && !['landing', 'form', 'booking', 'thankyou', 'review', 'other'].includes(s.role)) warnings.push(`funnel.json: step ${s.path} has an unknown "role" (${s.role}) — the platform will guess from the path instead.`);
+        else if (s.role === undefined) warnings.push(`funnel.json: step ${s.path} has no "role" — the platform will guess from the path (spec v1 §funnel.json). Set it so bookings/forms are counted right.`);
+      }
     }
     if (manifest.goal !== undefined && !String(manifest.goal).split(',').map((t) => t.trim()).filter(Boolean)
       .every((t) => ['leads', 'calls', 'form', 'call', 'booking'].includes(t) || /^step:\/.+/.test(t) || /^click:[a-z0-9][a-z0-9-]{0,39}$/.test(t))) {
