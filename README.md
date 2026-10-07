@@ -16,20 +16,32 @@ In Claude Code:
 You need read access to this repo (it's private) — your normal GitHub
 authentication is used to clone it.
 
-## Update
+## Update (important)
 
-Claude Code checks the marketplace for new versions; you can force it any
-time with:
+Plugins from a private GitHub marketplace like this one do **not** update
+themselves unless auto-update is switched on. Turn it on once, or you'll keep
+running an old copy of the spec:
+
+1. In Claude Code run `/plugin`, open **Marketplaces**, pick
+   `openfunnels-plugin` and enable auto-update.
+
+To update by hand at any time:
 
 ```
+/plugin marketplace update openfunnels-plugin
 /plugin update openfunnels
 ```
+
+Restart Claude Code after updating. Check your version with
+`/plugin` (installed plugins list): it should match `version` in
+`plugins/openfunnels/.claude-plugin/plugin.json`.
 
 ## What's inside
 
 | Component | What it does |
 |---|---|
 | `funnel-packager` skill | The full funnel package spec (v1) — Claude follows it automatically whenever you build or edit OpenFunnels pages. |
+| Prompt hook | When your message mentions OpenFunnels, landing pages or funnels, it reminds Claude to load `funnel-packager` before building. Makes the skill trigger reliably even with lots of other skills installed. |
 | `/package-funnel [dir]` | Validates a funnel directory against the spec (same rules as the platform's upload validation) and zips it ready for upload. |
 
 More skills (landing-page design, copywriting) will land here as they're

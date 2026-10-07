@@ -1,6 +1,6 @@
 ---
 name: funnel-packager
-description: Build, edit, or package landing pages and funnels for the OpenFunnels platform. Use whenever creating funnel pages, preparing a funnel .zip for upload, building a bundle for bulk import, setting up a split test (index-b.html), writing funnel.json or tracking.md, or when the user mentions OpenFunnels, funnel packages, or uploading a funnel.
+description: Use FIRST, before writing any page, whenever the user mentions OpenFunnels or asks to build, copy, edit or package a landing page or funnel (including "make one like the X page"). Holds the OpenFunnels rules for pages, lead forms, editable markers, split tests (index-b.html), funnel.json, tracking.md and upload zips.
 ---
 
 # OpenFunnels Funnel Packager
