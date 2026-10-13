@@ -33,6 +33,11 @@ never rely on memory of an older version.
   with `.hp` hidden **off-screen in CSS** (never `display:none`).
 - Mark required inputs `required`. The platform refuses to send a form that
   fails the browser's validity check (even with `novalidate`) or is all-blank.
+- Lead views show each field's **question**, read off the page (label,
+  legend, or the heading of a one-question step). Where that wouldn't read
+  well, add `data-question="Full question"` to the field. Choice buttons
+  feeding a hidden input carry `data-value` so the chosen button's wording
+  shows too.
 - Give every `funnel.json` step a `role` (`landing` / `form` / `booking` /
   `thankyou` / `review` / `other`): it tells the platform what the page is
   for, e.g. only a `booking` page switches bookings on. Omitted = guessed from

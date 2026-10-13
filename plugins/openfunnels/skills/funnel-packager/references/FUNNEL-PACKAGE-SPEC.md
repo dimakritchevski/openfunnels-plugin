@@ -39,6 +39,20 @@ spec; violations are rejected with a clear error.
   custom error banner keeps working). A form whose every value is blank is
   refused the same way. Server-side, an all-blank submission is stored as
   spam and never notified, so the no-JS fallback is covered too.
+- **Lead views show the question, not the field name.** On submit the
+  snippet reads the question each field sits under and saves it with the
+  lead, so the admin, email and Slack say "How do you usually deal with
+  customers?" instead of "Service model". It looks for, in order:
+  `data-question` on the field or a wrapper, `<label for>`, a wrapping
+  `<label>`, `aria-labelledby`, a `<fieldset>`'s `<legend>`, then the
+  heading (`h1`-`h6`) of the widest box holding only that field (one
+  question per step works as-is), then `aria-label`. When none of those
+  reads well (several fields under one heading, a vague label), set
+  `data-question="Full question text"` on the field. For choice buttons
+  feeding a hidden input, give each button `data-value` (the stored value)
+  inside the same box, and the lead also shows the button's own wording.
+  Field names still matter for integrations and spreadsheets, so keep them
+  short and descriptive (`service_model`).
 
 ## Review funnels (`"kind": "review"`)
 
