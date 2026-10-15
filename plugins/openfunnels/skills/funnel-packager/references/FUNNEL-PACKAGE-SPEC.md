@@ -351,7 +351,10 @@ the logo to swap it) and how the admin's Settings card previews them.
 - Mark texts with `data-edit` as on a page. Keep a `<title>`, `<head>` and
   `<body>` like every other HTML file in the package.
 - A package without `emails/review.html` keeps using the plain-text
-  `email_body` template from `funnel.json` / the Settings tab.
+  `email_body` template from `funnel.json` / the Messages tab.
+- Once someone edits the email in the admin (Messages > Edit email), that
+  edited copy is what sends, including after later uploads; the editor's
+  Reset > "The package's email" goes back to the uploaded file.
 
 ## Tracked clicks (`data-track-click`)
 
